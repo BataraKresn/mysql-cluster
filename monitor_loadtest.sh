@@ -13,7 +13,7 @@ NC='\033[0m'
 # Configuration
 PROXYSQL_ADMIN_USER="superman"
 PROXYSQL_ADMIN_PASS="Soleh1!"
-MYSQL_ROOT_PASS="2fF2P7xqVtc4iCExR"
+MYSQL_ROOT_PASS="RootPass123!"
 INTERVAL=5
 
 echo -e "${BLUE}=====================================${NC}"
@@ -29,55 +29,13 @@ get_metrics() {
     
     # ProxySQL Connection Pool
     echo -e "${CYAN}ProxySQL Connection Pool:${NC}"
-    mysql -h127.0.0.1 -P6032 -u$PROXYSQL_ADMIN_USER -p$PROXYSQL_ADMIN_PASS -e "
-    SELECT 
-        CONCAT(srv_host, ':', srv_port) as Server,
-        hostgroup as HG,
-        status as Status,
-        ConnUsed as Used,
-        ConnFree as Free,
-        ConnOK as OK,
-        ConnERR as Error,
-        Queries as Queries,
-        ROUND(Bytes_data_sent/1024/1024, 2) as 'Sent_MB',
-        ROUND(Bytes_data_recv/1024/1024, 2) as 'Recv_MB'
-    FROM stats_mysql_connection_pool 
-    ORDER BY hostgroup;" 2>/dev/null || echo "Failed to get ProxySQL stats"
+    mysql -h192.168.11.122 -P6032 -u$PROXYSQL_ADMIN_USER -p$PROXYSQL_ADMIN_PASS -e "SELECT CONCAT(srv_host, ':', srv_port) as Server, hostgroup as HG, status as Status, ConnUsed as Used, ConnFree as Free FROM stats_mysql_connection_pool ORDER BY hostgroup;" 2>/dev/null || echo "Failed to get ProxySQL stats"
     
     echo
     
-    # MySQL Primary Status
+    # MySQL Primary Status (via docker exec karena tidak ada port external)
     echo -e "${CYAN}MySQL Primary Status:${NC}"
-    mysql -h127.0.0.1 -P3306 -uroot -p$MYSQL_ROOT_PASS -e "
-    SELECT 
-        'Threads_connected' as Metric, 
-        VARIABLE_VALUE as Value 
-    FROM information_schema.GLOBAL_STATUS 
-    WHERE VARIABLE_NAME='Threads_connected'
-    UNION ALL
-    SELECT 
-        'Questions', 
-        VARIABLE_VALUE 
-    FROM information_schema.GLOBAL_STATUS 
-    WHERE VARIABLE_NAME='Questions'
-    UNION ALL
-    SELECT 
-        'Com_select', 
-        VARIABLE_VALUE 
-    FROM information_schema.GLOBAL_STATUS 
-    WHERE VARIABLE_NAME='Com_select'
-    UNION ALL
-    SELECT 
-        'Com_insert', 
-        VARIABLE_VALUE 
-    FROM information_schema.GLOBAL_STATUS 
-    WHERE VARIABLE_NAME='Com_insert'
-    UNION ALL
-    SELECT 
-        'Com_update', 
-        VARIABLE_VALUE 
-    FROM information_schema.GLOBAL_STATUS 
-    WHERE VARIABLE_NAME='Com_update';" 2>/dev/null || echo "Failed to get MySQL Primary stats"
+    docker exec mysql-primary bash -c 'mysql -p$MYSQL_ROOT_PASSWORD -e "SELECT \"Threads_connected\" as Metric, VARIABLE_VALUE as Value FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME=\"Threads_connected\";"' 2>/dev/null || echo "Failed to get MySQL Primary stats"
     
     echo
     

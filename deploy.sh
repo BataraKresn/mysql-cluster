@@ -21,7 +21,7 @@ PROXYSQL_ADMIN_USER="superman"
 PROXYSQL_ADMIN_PASS="Soleh1!"
 
 # ProxySQL connection details
-PROXYSQL_HOST="127.0.0.1"
+PROXYSQL_HOST="192.168.11.122"  # IP host server agar bisa diakses dari server lain
 PROXYSQL_PORT="6033"
 PROXYSQL_ADMIN_PORT="6032"
 
@@ -55,6 +55,11 @@ log() {
 # Function to check if command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
+}
+
+# Function to check if docker compose works
+docker_compose_exists() {
+    docker compose version >/dev/null 2>&1
 }
 
 # Function to wait for service to be ready
@@ -93,18 +98,17 @@ check_prerequisites() {
     log "✓ Docker is available: $(docker --version)"
     
     # Check Docker Compose
-    if ! command_exists "docker compose"; then
-        if ! command_exists docker-compose; then
-            log "✗ Docker Compose is not installed"
-            exit 1
-        else
-            log "⚠ Using legacy docker-compose command"
-            DOCKER_COMPOSE="docker-compose"
-        fi
-    else
+    if docker_compose_exists; then
         DOCKER_COMPOSE="docker compose"
+        log "✓ Docker Compose is available (v2)"
+    elif command_exists docker-compose; then
+        DOCKER_COMPOSE="docker-compose"
+        log "✓ Docker Compose is available (v1 - legacy)"
+    else
+        log "✗ Docker Compose is not installed"
+        log "Please install Docker Compose v2 or legacy docker-compose"
+        exit 1
     fi
-    log "✓ Docker Compose is available"
     
     # Check MySQL client
     if ! command_exists mysql; then
@@ -165,10 +169,14 @@ prepare_environment() {
     # Set proper permissions for MySQL data directories
     if [ "$(id -u)" -eq 0 ]; then
         chown -R 999:999 primary-data replicat-data
+        # Fix config file permissions
+        chmod 644 primary-cnf/my.cnf replicat-cnf/my.cnf
     else
         sudo chown -R 999:999 primary-data replicat-data
+        # Fix config file permissions
+        sudo chmod 644 primary-cnf/my.cnf replicat-cnf/my.cnf
     fi
-    log "✓ Data directories prepared"
+    log "✓ Data directories and config files prepared"
     
     # Clean up any existing containers
     if [ "$($DOCKER_COMPOSE ps -q)" ]; then
@@ -186,8 +194,23 @@ deploy_cluster() {
     log "Starting MySQL cluster containers..."
     $DOCKER_COMPOSE up -d
     
-    # Wait for MySQL Primary
-    wait_for_service "MySQL Primary" "127.0.0.1" "3306" || exit 1
+    # Wait for MySQL Primary (check via docker exec since no external port)
+    log "Waiting for MySQL Primary to be ready..."
+    local max_attempts=60
+    local attempt=1
+    while [ $attempt -le $max_attempts ]; do
+        if docker exec mysql-primary mysqladmin ping --silent 2>/dev/null; then
+            log "✓ MySQL Primary is ready"
+            break
+        fi
+        echo -n "."
+        sleep 2
+        ((attempt++))
+        if [ $attempt -gt $max_attempts ]; then
+            log "✗ MySQL Primary failed to start within $(($max_attempts * 2)) seconds"
+            exit 1
+        fi
+    done
     
     # Wait for ProxySQL
     wait_for_service "ProxySQL" "$PROXYSQL_HOST" "$PROXYSQL_PORT" || exit 1
@@ -204,15 +227,16 @@ deploy_cluster() {
     # Verify MySQL connections
     log "Testing MySQL connections..."
     
-    # Test direct MySQL connection
-    if mysql -h127.0.0.1 -P3306 -u$MYSQL_APP_USER -p$MYSQL_APP_PASS -e "SELECT 'MySQL Primary OK' as status;" 2>/dev/null; then
-        log "✓ MySQL Primary connection successful"
+    # Note: MySQL Primary tidak expose port external, hanya bisa diakses via ProxySQL
+    # Test via docker exec untuk memastikan MySQL Primary berjalan
+    if docker exec mysql-primary mysql -uroot -p$MYSQL_ROOT_PASS -e "SELECT 'MySQL Primary OK' as status;" 2>/dev/null; then
+        log "✓ MySQL Primary internal connection successful"
     else
-        log "✗ MySQL Primary connection failed"
+        log "✗ MySQL Primary internal connection failed"
         exit 1
     fi
     
-    # Test ProxySQL connection
+    # Test ProxySQL connection (ini yang utama untuk aplikasi)
     if mysql -h$PROXYSQL_HOST -P$PROXYSQL_PORT -u$MYSQL_APP_USER -p$MYSQL_APP_PASS -e "SELECT 'ProxySQL OK' as status;" 2>/dev/null; then
         log "✓ ProxySQL connection successful"
     else
@@ -506,7 +530,7 @@ EOF
     
     # MySQL performance metrics
     echo "MySQL Primary Performance Metrics:" >> "$REPORT_FILE"
-    mysql -h127.0.0.1 -P3306 -uroot -p$MYSQL_ROOT_PASS -e "
+    mysql -h127.0.0.1 -P3307 -uroot -p$MYSQL_ROOT_PASS -e "
     SELECT 'Connections' as Metric, VARIABLE_VALUE as Value FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='Threads_connected'
     UNION ALL
     SELECT 'Questions', VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='Questions'

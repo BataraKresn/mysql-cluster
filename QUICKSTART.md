@@ -195,7 +195,9 @@ sudo rm -rf primary-data/* replicat-data/*
 mysql -h127.0.0.1 -P6032 -usuperman -pSoleh1! -e "SELECT * FROM mysql_servers;"
 
 # Check connection limits
-mysql -h127.0.0.1 -P3306 -uroot -p2fF2P7xqVtc4iCExR -e "SHOW VARIABLES LIKE 'max_connections';"
+# Direct ke Primary (port 3307)
+# Check connection limits
+mysql -h127.0.0.1 -P3307 -uroot -p2fF2P7xqVtc4iCExR -e "SHOW VARIABLES LIKE 'max_connections';"
 
 # Run individual test
 ./deploy.sh test

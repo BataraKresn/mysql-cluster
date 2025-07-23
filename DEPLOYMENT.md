@@ -67,7 +67,7 @@ docker compose ps
 mysql -h127.0.0.1 -P6033 -uappuser -pAppPass123! -e "SELECT 'ProxySQL OK' as status;"
 
 # Test direct MySQL connection
-mysql -h127.0.0.1 -P3306 -uroot -p2fF2P7xqVtc4iCExR -e "SELECT 'MySQL OK' as status;"
+mysql -h127.0.0.1 -P3307 -uroot -p2fF2P7xqVtc4iCExR -e "SELECT 'MySQL OK' as status;"
 
 # Check replication status
 docker exec mysql-replica mysql -uroot -p2fF2P7xqVtc4iCExR -e "SHOW SLAVE STATUS\G" | grep -E "(Slave_IO_Running|Slave_SQL_Running|Seconds_Behind_Master)"

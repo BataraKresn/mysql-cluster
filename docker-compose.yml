@@ -18,8 +18,7 @@ services:
     networks:
       mysqlnet:
         ipv4_address: 172.20.0.10
-    ports:
-      - "3307:3306"
+    # Port tidak di-expose karena akses lewat ProxySQL
 
   mysql-replica:
     image: mysql:8.0.42

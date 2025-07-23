@@ -64,7 +64,7 @@ This MySQL cluster setup implements a **Master-Slave Replication** architecture 
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 
-External Network: 0.0.0.0:3306, 0.0.0.0:6033, 0.0.0.0:6032
+External Network: 0.0.0.0:3307, 0.0.0.0:6033, 0.0.0.0:6032
 Internal Network: 172.20.0.0/16
 ```
 
@@ -74,7 +74,7 @@ Internal Network: 172.20.0.0/16
 - **Container**: `mysql-primary`
 - **Image**: `mysql:8.0.42`
 - **Internal IP**: `172.20.0.10`
-- **External Port**: `3306`
+- **External Port**: `3307`
 - **Role**: Read/Write operations, Binary logging for replication
 - **Server ID**: `1`
 
@@ -132,7 +132,7 @@ INSERT/UPDATE/DELETE → mysql-primary (172.20.0.10)
 ### IP Address Allocation
 | Component | Internal IP | External Port | Purpose |
 |-----------|-------------|---------------|---------|
-| MySQL Primary | 172.20.0.10 | 3306 | Read/Write Database |
+| MySQL Primary | 172.20.0.10 | 3307 | Read/Write Database |
 | MySQL Replica | 172.20.0.11 | - | Read-only Database |
 | ProxySQL | 172.20.0.12 | 6033, 6032 | Load Balancer & Admin |
 
@@ -142,7 +142,7 @@ INSERT/UPDATE/DELETE → mysql-primary (172.20.0.10)
 mysql -h<SERVER_IP> -P6033 -u<username> -p<password>
 
 # Direct primary access (for admin)
-mysql -h<SERVER_IP> -P3306 -u<username> -p<password>
+mysql -h<SERVER_IP> -P3307 -u<username> -p<password>
 
 # ProxySQL administration
 mysql -h<SERVER_IP> -P6032 -usuperman -pSoleh1!
@@ -183,7 +183,7 @@ CHANGE MASTER TO
 ### Network Security
 - **Internal Communication**: All inter-container communication uses internal network
 - **External Access**: Only necessary ports exposed to host
-- **Firewall Rules**: Configure host firewall for ports 3306, 6033, 6032
+- **Firewall Rules**: Configure host firewall for ports 3307, 6033, 6032
 
 ### Authentication
 - **MySQL Native Password**: Used for all MySQL users
@@ -193,12 +193,12 @@ CHANGE MASTER TO
 ### Recommended Firewall Rules
 ```bash
 # Ubuntu/Debian
-sudo ufw allow 3306/tcp
+sudo ufw allow 3307/tcp
 sudo ufw allow 6033/tcp
 sudo ufw allow 6032/tcp
 
 # CentOS/RHEL
-sudo firewall-cmd --permanent --add-port=3306/tcp
+sudo firewall-cmd --permanent --add-port=3307/tcp
 sudo firewall-cmd --permanent --add-port=6033/tcp
 sudo firewall-cmd --permanent --add-port=6032/tcp
 sudo firewall-cmd --reload
@@ -247,7 +247,7 @@ docker compose logs
 
 # 5. Test connections
 mysql -h127.0.0.1 -P6033 -uappuser -pAppPass123! -e "SELECT 'ProxySQL Connection OK'"
-mysql -h127.0.0.1 -P3306 -uroot -p2fF2P7xqVtc4iCExR -e "SELECT 'Direct MySQL OK'"
+mysql -h127.0.0.1 -P3307 -uroot -p2fF2P7xqVtc4iCExR -e "SELECT 'Direct MySQL OK'"
 ```
 
 ### Health Checks

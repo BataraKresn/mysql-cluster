@@ -19,7 +19,7 @@ External Clients
 │Master   │─┤Slave    │ ← Replication
 │172.20.  │ │172.20.  │
 │0.10     │ │0.11     │
-│Port 3306│ │Read Only│
+│Port 3307│ │Read Only│
 └─────────┘ └─────────┘
 ```
 
@@ -27,7 +27,7 @@ External Clients
 
 | Component | Container | IP | Ports | Role | Status |
 |-----------|-----------|-------|-------|------|--------|
-| **MySQL Primary** | mysql-primary | 172.20.0.10 | 3306 | Read/Write Master | ✅ Active |
+| **MySQL Primary** | mysql-primary | 172.20.0.10 | 3307 | Read/Write Master | ✅ Active |
 | **MySQL Replica** | mysql-replica | 172.20.0.11 | Internal | Read-Only Slave | ✅ Active |
 | **ProxySQL** | proxysql | 172.20.0.12 | 6033, 6032 | Load Balancer | ✅ Active |
 
@@ -99,7 +99,7 @@ mysql -h<SERVER_IP> -P6033 -uappuser -pAppPass123!
 ### Administration
 ```bash
 # Direct MySQL Access
-mysql -h<SERVER_IP> -P3306 -uroot -p2fF2P7xqVtc4iCExR
+mysql -h<SERVER_IP> -P3307 -uroot -p2fF2P7xqVtc4iCExR
 
 # ProxySQL Administration
 mysql -h<SERVER_IP> -P6032 -usuperman -pSoleh1!
@@ -220,7 +220,8 @@ docker exec mysql-primary mysqldump -uroot -p2fF2P7xqVtc4iCExR --all-databases >
 
 # Test connections
 mysql -h127.0.0.1 -P6033 -uappuser -pAppPass123! -e "SELECT 'OK'"
-mysql -h127.0.0.1 -P3306 -uroot -p2fF2P7xqVtc4iCExR -e "SELECT 'OK'"
+# Test direct MySQL connection
+mysql -h127.0.0.1 -P3307 -uroot -p2fF2P7xqVtc4iCExR -e "SELECT 'OK'"
 ```
 
 ---
