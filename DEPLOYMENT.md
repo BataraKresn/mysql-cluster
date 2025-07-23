@@ -9,7 +9,7 @@ docker --version
 # Required: Docker Engine 20.10+
 
 # Check Docker Compose version  
-docker-compose --version
+docker compose version
 # Required: Docker Compose 2.0+
 
 # Check available disk space
@@ -49,10 +49,10 @@ EOF
 #### 3. Start Cluster
 ```bash
 # Start all services
-docker-compose up -d
+docker compose up -d
 
 # Verify all containers are running
-docker-compose ps
+docker compose ps
 
 # Expected output:
 # NAME            IMAGE                         STATUS
@@ -78,8 +78,8 @@ docker exec mysql-replica mysql -uroot -p2fF2P7xqVtc4iCExR -e "SHOW SLAVE STATUS
 ### Daily Operations
 ```bash
 # Check cluster health
-docker-compose ps
-docker-compose logs --tail=50
+docker compose ps
+docker compose logs --tail=50
 
 # Monitor resource usage
 docker stats mysql-primary mysql-replica proxysql
@@ -91,20 +91,20 @@ docker exec mysql-replica mysql -uroot -p2fF2P7xqVtc4iCExR -e "SHOW SLAVE STATUS
 ### Maintenance Commands
 ```bash
 # Stop cluster
-docker-compose down
+docker compose down
 
 # Start cluster
-docker-compose up -d
+docker compose up -d
 
 # Restart specific service
-docker-compose restart mysql-primary
-docker-compose restart mysql-replica
-docker-compose restart proxysql
+docker compose restart mysql-primary
+docker compose restart mysql-replica
+docker compose restart proxysql
 
 # View logs
-docker-compose logs mysql-primary
-docker-compose logs mysql-replica
-docker-compose logs proxysql
+docker compose logs mysql-primary
+docker compose logs mysql-replica
+docker compose logs proxysql
 ```
 
 ### Backup & Recovery
@@ -132,8 +132,8 @@ nano primary-cnf/my.cnf
 nano replicat-cnf/my.cnf
 
 # Apply changes (requires restart)
-docker-compose restart mysql-primary
-docker-compose restart mysql-replica
+docker compose restart mysql-primary
+docker compose restart mysql-replica
 ```
 
 ### Update ProxySQL Configuration
@@ -142,7 +142,7 @@ docker-compose restart mysql-replica
 nano proxysql/proxysql.cnf
 
 # Apply changes
-docker-compose restart proxysql
+docker compose restart proxysql
 
 # Or reload configuration without restart
 docker exec proxysql mysql -h127.0.0.1 -P6032 -usuperman -pSoleh1! -e "
@@ -168,7 +168,7 @@ echo
 
 # Check container status
 echo "1. Container Status:"
-docker-compose ps
+docker compose ps
 
 echo
 echo "2. Replication Status:"
@@ -304,13 +304,13 @@ SHOW STATUS LIKE 'Innodb_buffer_pool%';
 # WARNING: This will delete all data!
 
 # 1. Stop cluster
-docker-compose down
+docker compose down
 
 # 2. Remove data
 sudo rm -rf primary-data/* replicat-data/*
 
 # 3. Start fresh
-docker-compose up -d
+docker compose up -d
 
 # 4. Verify deployment
 ./health_check.sh
@@ -320,7 +320,7 @@ docker-compose up -d
 ```bash
 # 1. Stop writes to primary
 # - Update application configuration to stop writes
-# - Or stop primary container: docker-compose stop mysql-primary
+# - Or stop primary container: docker compose stop mysql-primary
 
 # 2. Promote replica to master
 docker exec mysql-replica mysql -uroot -p2fF2P7xqVtc4iCExR -e "

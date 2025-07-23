@@ -52,23 +52,23 @@
 ### Cluster Management
 ```bash
 # Start cluster
-docker-compose up -d
+docker compose up -d
 
 # Stop cluster
-docker-compose down
+docker compose down
 
 # Restart specific service
-docker-compose restart mysql-primary
-docker-compose restart mysql-replica
-docker-compose restart proxysql
+docker compose restart mysql-primary
+docker compose restart mysql-replica
+docker compose restart proxysql
 
 # View logs
-docker-compose logs -f mysql-primary
-docker-compose logs -f mysql-replica
-docker-compose logs -f proxysql
+docker compose logs -f mysql-primary
+docker compose logs -f mysql-replica
+docker compose logs -f proxysql
 
 # Check status
-docker-compose ps
+docker compose ps
 ```
 
 ### Direct MySQL Access
@@ -207,13 +207,13 @@ SAVE MYSQL SERVERS TO DISK;"
 # WARNING: This will delete all data!
 
 # Stop cluster
-docker-compose down
+docker compose down
 
 # Remove all data
 sudo rm -rf primary-data/* replicat-data/*
 
 # Start fresh cluster
-docker-compose up -d
+docker compose up -d
 
 # Verify cluster
 ./health_check.sh
@@ -222,23 +222,23 @@ docker-compose up -d
 ### 4. Recovery from Backup
 ```bash
 # Stop cluster
-docker-compose down
+docker compose down
 
 # Remove corrupted data
 sudo rm -rf primary-data/* replicat-data/*
 
 # Start only primary
-docker-compose up -d mysql-primary
+docker compose up -d mysql-primary
 
 # Restore from backup
 gunzip -c /var/backups/mysql-cluster/full_backup_YYYYMMDD_HHMMSS.sql.gz | \
 docker exec -i mysql-primary mysql -uroot -p2fF2P7xqVtc4iCExR
 
 # Start replica
-docker-compose up -d mysql-replica
+docker compose up -d mysql-replica
 
 # Start ProxySQL
-docker-compose up -d proxysql
+docker compose up -d proxysql
 
 # Verify cluster
 ./health_check.sh
@@ -253,8 +253,8 @@ nano primary-cnf/my.cnf
 nano replicat-cnf/my.cnf
 
 # Restart containers to apply changes
-docker-compose restart mysql-primary
-docker-compose restart mysql-replica
+docker compose restart mysql-primary
+docker compose restart mysql-replica
 ```
 
 ### ProxySQL Configuration Changes
@@ -263,7 +263,7 @@ docker-compose restart mysql-replica
 nano proxysql/proxysql.cnf
 
 # Option 1: Restart container
-docker-compose restart proxysql
+docker compose restart proxysql
 
 # Option 2: Reload without restart (for some settings)
 docker exec proxysql mysql -h127.0.0.1 -P6032 -usuperman -pSoleh1! -e "

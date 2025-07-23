@@ -5,7 +5,12 @@
 - [Architecture](#architecture)
 - [Components](#components)
 - [Network Configuration](#network-configuration)
-- [Database Configuration](#database-configuration)
+- [Database Configuration](#datab# Start the cluster
+docker compose up -d
+
+# Verify deployment
+docker compose ps
+docker compose logsnfiguration)
 - [Security](#security)
 - [Deployment](#deployment)
 - [Monitoring](#monitoring)
@@ -234,11 +239,11 @@ cd /path/to/mysql-cluster
 mkdir -p primary-data replicat-data
 
 # 3. Start the cluster
-docker-compose up -d
+docker compose up -d
 
 # 4. Verify deployment
-docker-compose ps
-docker-compose logs
+docker compose ps
+docker compose logs
 
 # 5. Test connections
 mysql -h127.0.0.1 -P6033 -uappuser -pAppPass123! -e "SELECT 'ProxySQL Connection OK'"
@@ -248,7 +253,7 @@ mysql -h127.0.0.1 -P3306 -uroot -p2fF2P7xqVtc4iCExR -e "SELECT 'Direct MySQL OK'
 ### Health Checks
 ```bash
 # Check container status
-docker-compose ps
+docker compose ps
 
 # Check replication status
 docker exec -it mysql-replica mysql -uroot -p2fF2P7xqVtc4iCExR -e "SHOW SLAVE STATUS\G"
@@ -416,8 +421,8 @@ docker exec mysql-primary mysqlbinlog mysql-bin.000001 > binlog_backup.sql
 ### Maintenance Tasks
 ```bash
 # Update cluster
-docker-compose pull
-docker-compose up -d
+docker compose pull
+docker compose up -d
 
 # Clean old binary logs (keep 30 days)
 docker exec mysql-primary mysql -uroot -p2fF2P7xqVtc4iCExR -e "PURGE BINARY LOGS BEFORE DATE(NOW() - INTERVAL 30 DAY);"

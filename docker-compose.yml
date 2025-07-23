@@ -19,7 +19,7 @@ services:
       mysqlnet:
         ipv4_address: 172.20.0.10
     ports:
-      - "3306:3306"
+      - "3307:3306"
 
   mysql-replica:
     image: mysql:8.0.42

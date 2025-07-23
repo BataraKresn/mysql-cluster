@@ -202,11 +202,11 @@ SELECT hostgroup,srv_host,srv_port,status,weight FROM mysql_servers;
 
 ```bash
 # Cluster management
-docker-compose up -d              # Start cluster
-docker-compose down               # Stop cluster
-docker-compose restart <service>  # Restart service
-docker-compose ps                 # Check status
-docker-compose logs <service>     # View logs
+docker compose up -d              # Start cluster
+docker compose down               # Stop cluster
+docker compose restart <service>  # Restart service
+docker compose ps                 # Check status
+docker compose logs <service>     # View logs
 
 # Health checks
 docker exec mysql-replica mysql -uroot -p2fF2P7xqVtc4iCExR -e "SHOW SLAVE STATUS\G"
