@@ -1,0 +1,36 @@
+datadir="/var/lib/proxysql"
+
+admin_variables =
+{
+    admin_credentials="superman:Soleh1!"
+    mysql_ifaces="0.0.0.0:6032"
+}
+
+mysql_variables =
+{
+    threads=4
+    max_connections=2048
+}
+
+mysql_servers =
+(
+    { address="172.20.0.10", port=3306, hostgroup=10, max_connections=100 },
+    { address="172.20.0.11", port=3306, hostgroup=20, max_connections=100 }
+)
+
+mysql_users =
+(
+    { username = "root", password = "2fF2P7xqVtc4iCExR", default_hostgroup = 10, transaction_persistent = 0 },
+    { username = "appuser", password = "AppPass123!", default_hostgroup = 10, transaction_persistent = 0 }
+)
+
+mysql_query_rules =
+(
+    {
+      rule_id=1
+      active=1
+      match_pattern="^SELECT .*"
+      destination_hostgroup=20
+      apply=1
+    }
+)
