@@ -1,0 +1,23 @@
+# Laravel Environment Configuration untuk MySQL Cluster
+# Salin ke file .env Laravel project
+
+# Database Configuration (Gunakan ProxySQL untuk semua query)
+DB_CONNECTION=mysql
+DB_HOST=192.168.11.122
+DB_PORT=6033
+DB_DATABASE=appdb
+DB_USERNAME=appuser
+DB_PASSWORD=AppPass123!
+
+# Alternative untuk Database MPP
+DB_MPP_HOST=192.168.11.122
+DB_MPP_PORT=6033
+DB_MPP_DATABASE=db-mpp
+DB_MPP_USERNAME=appuser
+DB_MPP_PASSWORD=AppPass123!
+
+# Untuk Read/Write Split Manual (Optional)
+DB_WRITE_HOST=192.168.11.122
+DB_WRITE_PORT=6033
+DB_READ_HOST=192.168.11.122
+DB_READ_PORT=6033

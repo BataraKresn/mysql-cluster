@@ -244,9 +244,34 @@ deploy_cluster() {
         exit 1
     fi
     
+    # Setup and sync replication
+    log "Setting up MySQL replication..."
+    
+    # Setup replication on replica
+    docker exec mysql-replica bash -c 'mysql -p$MYSQL_ROOT_PASSWORD -e "
+        STOP REPLICA;
+        RESET REPLICA;
+        CHANGE REPLICATION SOURCE TO
+          SOURCE_HOST=\"mysql-primary\",
+          SOURCE_USER=\"repl\",
+          SOURCE_PASSWORD=\"replpass\",
+          SOURCE_AUTO_POSITION=1;
+    "' 2>/dev/null || true
+    
+    # Sync existing data from primary to replica
+    log "Syncing existing data from Primary to Replica..."
+    docker exec mysql-primary bash -c 'mysqldump -p$MYSQL_ROOT_PASSWORD --single-transaction --routines --triggers --all-databases --set-gtid-purged=OFF > /tmp/primary_sync.sql' 2>/dev/null
+    docker cp mysql-primary:/tmp/primary_sync.sql ./temp_sync.sql
+    docker cp ./temp_sync.sql mysql-replica:/tmp/replica_sync.sql
+    docker exec mysql-replica bash -c 'mysql -p$MYSQL_ROOT_PASSWORD < /tmp/replica_sync.sql' 2>/dev/null
+    rm -f ./temp_sync.sql
+    
+    # Start replication
+    docker exec mysql-replica bash -c 'mysql -p$MYSQL_ROOT_PASSWORD -e "START REPLICA;"' 2>/dev/null
+    
     # Check replication status
     log "Checking replication status..."
-    REPL_STATUS=$(docker exec mysql-replica mysql -uroot -p$MYSQL_ROOT_PASS -e "SHOW SLAVE STATUS\G" 2>/dev/null | grep -E "(Slave_IO_Running|Slave_SQL_Running|Seconds_Behind_Master)" || echo "")
+    REPL_STATUS=$(docker exec mysql-replica bash -c 'mysql -p$MYSQL_ROOT_PASSWORD -e "SHOW REPLICA STATUS\G"' 2>/dev/null | grep -E "(Replica_IO_Running|Replica_SQL_Running|Seconds_Behind_Source)" || echo "")
     
     if echo "$REPL_STATUS" | grep -q "Slave_IO_Running: Yes" && echo "$REPL_STATUS" | grep -q "Slave_SQL_Running: Yes"; then
         log "✓ Replication is working"
