@@ -50,8 +50,10 @@ Panduan lengkap dan indeks untuk semua dokumentasi MySQL Cluster dengan ProxySQL
 
 | Document | Purpose | Target Audience | Status |
 |----------|---------|-----------------|--------|
-| **[README-UPDATED.md](README-UPDATED.md)** | Main project overview & quick start | All users | ✅ Complete |
+| **[README.md](README.md)** | Main project overview & quick start | All users | ✅ Complete |
 | **[DEPLOYMENT-UPDATED.md](DEPLOYMENT-UPDATED.md)** | Comprehensive deployment guide | DevOps/Admins | ✅ Complete |
+| **[DEPLOYMENT.md](DEPLOYMENT.md)** | Step-by-step deployment guide | DevOps/Admins | ✅ Complete |
+| **[CLI-GUIDE.md](CLI-GUIDE.md)** | Interactive CLI management tool guide | All users | ✅ Complete |
 | **[LARAVEL-INTEGRATION.md](LARAVEL-INTEGRATION.md)** | Laravel framework integration | Developers | ✅ Complete |
 | **[PRODUCTION-OPS.md](PRODUCTION-OPS.md)** | Production operations & monitoring | SysAdmins | ✅ Complete |
 
@@ -71,6 +73,7 @@ Panduan lengkap dan indeks untuk semua dokumentasi MySQL Cluster dengan ProxySQL
 | Script | Purpose | Usage |
 |--------|---------|-------|
 | **[deploy.sh](deploy.sh)** | Complete cluster deployment | `./deploy.sh` |
+| **[cluster-cli.sh](cluster-cli.sh)** | **Interactive CLI management tool** | `./cluster-cli.sh` |
 | **[health_check.sh](health_check.sh)** | System health monitoring | `./health_check.sh` |
 | **[backup.sh](backup.sh)** | Database backup automation | `./backup.sh [full\|incremental]` |
 | **[clean-restart.sh](clean-restart.sh)** | Complete cluster reset | `./clean-restart.sh` |
@@ -115,6 +118,29 @@ DB_DATABASE=appdb
 DB_USERNAME=appuser
 DB_PASSWORD=AppPass123!
 ```
+
+### **4. 🎛️ CLI Management Tool (Interactive)**
+
+```bash
+# Launch interactive CLI management
+./cluster-cli.sh
+
+# Quick status check
+./cluster-cli.sh status
+
+# Show help
+./cluster-cli.sh --help
+```
+
+**CLI Features:**
+- 📊 **Cluster Status Overview** - Complete health dashboard
+- 🔍 **ProxySQL Monitoring** - Connection pools, query rules, statistics
+- 🗄️ **MySQL Primary/Replica Status** - Server info, replication status
+- 📈 **Performance Monitoring** - Resource usage, query performance
+- 🔧 **Cluster Operations** - Start/stop/restart, logs, backup
+- 🚀 **Load Testing** - Built-in load testing with multiple scenarios
+- 🔧 **Troubleshooting** - Automated diagnostics and fixes
+- 📚 **Documentation Access** - Built-in documentation viewer
 
 ## 📊 **Feature Matrix**
 
@@ -214,7 +240,7 @@ php artisan db:health-check
 | **ProxySQL not routing** | `./deploy.sh` | [PRODUCTION-OPS.md](PRODUCTION-OPS.md) |
 | **Replication broken** | `./troubleshoot.sh` → Option 2 | [PRODUCTION-OPS.md](PRODUCTION-OPS.md) |
 | **Container not starting** | `docker compose down && ./deploy.sh` | [DEPLOYMENT-UPDATED.md](DEPLOYMENT-UPDATED.md) |
-| **Connection refused** | Check `./health_check.sh` | [README-UPDATED.md](README-UPDATED.md) |
+| **Connection refused** | Check `./health_check.sh` | [README.md](README.md) |
 | **Laravel connection error** | Verify .env configuration | [LARAVEL-INTEGRATION.md](LARAVEL-INTEGRATION.md) |
 
 ### **🔧 Emergency Commands**
@@ -268,14 +294,15 @@ docker compose exec proxysql mysql -h127.0.0.1 -P6032 -usuperman -pSoleh1!
 
 ### **👨‍💻 For Developers**
 
-1. **Start here:** [README-UPDATED.md](README-UPDATED.md)
-2. **Integration:** [LARAVEL-INTEGRATION.md](LARAVEL-INTEGRATION.md)
-3. **Practice:** Run `./deploy.sh` and experiment
-4. **Advanced:** Study configuration files
+1. **Start here:** [README.md](README.md)
+2. **Management:** [CLI-GUIDE.md](CLI-GUIDE.md) - Interactive tool
+3. **Integration:** [LARAVEL-INTEGRATION.md](LARAVEL-INTEGRATION.md)
+4. **Practice:** Run `./cluster-cli.sh` and experiment
+5. **Advanced:** Study configuration files
 
 ### **🔧 For DevOps/SysAdmins**
 
-1. **Architecture:** [DEPLOYMENT-UPDATED.md](DEPLOYMENT-UPDATED.md)
+1. **Architecture:** [DEPLOYMENT-UPDATED.md](DEPLOYMENT-UPDATED.md) or [DEPLOYMENT.md](DEPLOYMENT.md)
 2. **Operations:** [PRODUCTION-OPS.md](PRODUCTION-OPS.md)
 3. **Practice:** All scripts in automation section
 4. **Advanced:** Customize for your infrastructure
@@ -351,3 +378,44 @@ docker compose exec proxysql mysql -h127.0.0.1 -P6032 -usuperman -pSoleh1!
 - ✅ Monitoring and troubleshooting tools
 
 **Ready for:** Development, Staging, Production environments 🚀
+
+## 📋 **Quick Reference Commands**
+
+### **🎛️ CLI Management (Recommended)**
+```bash
+# Interactive management interface
+./cluster-cli.sh
+
+# Quick status check
+./cluster-cli.sh status
+
+# Show CLI help
+./cluster-cli.sh --help
+```
+
+### **🚀 Direct Commands**
+```bash
+# Deploy cluster
+./deploy.sh
+
+# Health check
+./health_check.sh
+
+# Full system backup
+./backup.sh
+
+# Complete cluster reset
+./clean-restart.sh
+
+# View cluster status
+docker compose ps
+
+# View logs (all services)
+docker compose logs -f
+
+# Connect to ProxySQL admin
+docker compose exec proxysql mysql -h127.0.0.1 -P6032 -usuperman -pSoleh1!
+
+# Connect via ProxySQL (app connection)
+docker compose exec proxysql mysql -h127.0.0.1 -P6033 -uappuser -pAppPass123!
+```
