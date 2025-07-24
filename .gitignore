@@ -3,3 +3,5 @@ primary-data/
 logs/
 backups/
 .env
+dp_mpp-24072025.sql
+*.sql
