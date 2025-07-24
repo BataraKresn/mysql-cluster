@@ -5,7 +5,7 @@
  */
 
 /* Server parameters */
-$cfg['Servers'][1]['host'] = '192.168.11.122';
+$cfg['Servers'][1]['host'] = 'proxysql';
 $cfg['Servers'][1]['port'] = '6033';
 $cfg['Servers'][1]['socket'] = '';
 $cfg['Servers'][1]['connect_type'] = 'tcp';

@@ -54,6 +54,7 @@ Panduan lengkap dan indeks untuk semua dokumentasi MySQL Cluster dengan ProxySQL
 | **[DEPLOYMENT-UPDATED.md](DEPLOYMENT-UPDATED.md)** | Comprehensive deployment guide | DevOps/Admins | ✅ Complete |
 | **[DEPLOYMENT.md](DEPLOYMENT.md)** | Step-by-step deployment guide | DevOps/Admins | ✅ Complete |
 | **[CLI-GUIDE.md](CLI-GUIDE.md)** | Interactive CLI management tool guide | All users | ✅ Complete |
+| **[GUI-GUIDE.md](GUI-GUIDE.md)** | Web-based GUI management interfaces | All users | ✅ Complete |
 | **[LARAVEL-INTEGRATION.md](LARAVEL-INTEGRATION.md)** | Laravel framework integration | Developers | ✅ Complete |
 | **[PRODUCTION-OPS.md](PRODUCTION-OPS.md)** | Production operations & monitoring | SysAdmins | ✅ Complete |
 
@@ -132,6 +133,19 @@ DB_PASSWORD=AppPass123!
 ./cluster-cli.sh --help
 ```
 
+### **5. 🖥️ GUI Management (Web-based)**
+
+```bash
+# Access main dashboard
+open http://192.168.11.122:8082
+
+# Individual GUI tools
+open http://192.168.11.122:8080  # ProxySQL Web UI
+open http://192.168.11.122:8081  # phpMyAdmin  
+open http://192.168.11.122:3000  # Grafana (admin/admin123)
+open http://192.168.11.122:9090  # Prometheus
+```
+
 **CLI Features:**
 - 📊 **Cluster Status Overview** - Complete health dashboard
 - 🔍 **ProxySQL Monitoring** - Connection pools, query rules, statistics
@@ -141,6 +155,13 @@ DB_PASSWORD=AppPass123!
 - 🚀 **Load Testing** - Built-in load testing with multiple scenarios
 - 🔧 **Troubleshooting** - Automated diagnostics and fixes
 - 📚 **Documentation Access** - Built-in documentation viewer
+
+**GUI Features:**
+- 🎛️ **ProxySQL Web UI** - Configuration and real-time monitoring
+- 🗄️ **phpMyAdmin** - Database management interface
+- 📊 **Grafana Dashboards** - Advanced metrics visualization  
+- 📈 **Prometheus** - Raw metrics collection and querying
+- 🌐 **Custom Dashboard** - Unified cluster overview
 
 ## 📊 **Feature Matrix**
 

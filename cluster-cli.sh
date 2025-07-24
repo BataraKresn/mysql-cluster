@@ -67,11 +67,12 @@ show_main_menu() {
     echo "6.  📈 Performance Monitoring"
     echo "7.  🔧 Cluster Operations"
     echo "8.  🚀 Load Testing"
-    echo "9.  📚 Documentation"
-    echo "10. 🔧 Troubleshooting"
+    echo "9.  �️  GUI Management"
+    echo "10. �📚 Documentation"
+    echo "11. 🔧 Troubleshooting"
     echo "0.  ❌ Exit"
     echo ""
-    read -p "Enter your choice [0-10]: " choice
+    read -p "Enter your choice [0-11]: " choice
 }
 
 # 1. Cluster Status Overview
@@ -557,7 +558,134 @@ run_load_test() {
         cleanup 2>/dev/null && print_success "Test data cleaned up"
 }
 
-# 9. Documentation
+# 9. GUI Management
+gui_management() {
+    print_header "GUI Management Interfaces"
+    
+    echo "Available GUI tools:"
+    echo "1. 🎛️  Open ProxySQL Web UI"
+    echo "2. 🗄️  Open phpMyAdmin"
+    echo "3. 📊 Open Grafana Dashboard"
+    echo "4. 📈 Open Prometheus"
+    echo "5. 🌐 Open Custom Dashboard"
+    echo "6. 📋 Show All GUI URLs"
+    echo "7. 🔍 Check GUI Services Status"
+    echo "0. ← Back to Main Menu"
+    
+    read -p "Enter your choice [0-7]: " gui_choice
+    
+    case $gui_choice in
+        1)
+            print_info "Opening ProxySQL Web UI..."
+            if command -v xdg-open &> /dev/null; then
+                xdg-open "http://192.168.11.122:8080"
+            elif command -v open &> /dev/null; then
+                open "http://192.168.11.122:8080"
+            else
+                print_info "ProxySQL Web UI: http://192.168.11.122:8080"
+            fi
+            ;;
+        2)
+            print_info "Opening phpMyAdmin..."
+            if command -v xdg-open &> /dev/null; then
+                xdg-open "http://192.168.11.122:8081"
+            elif command -v open &> /dev/null; then
+                open "http://192.168.11.122:8081"
+            else
+                print_info "phpMyAdmin: http://192.168.11.122:8081"
+                print_info "Login with: appuser / AppPass123!"
+            fi
+            ;;
+        3)
+            print_info "Opening Grafana Dashboard..."
+            if command -v xdg-open &> /dev/null; then
+                xdg-open "http://192.168.11.122:3000"
+            elif command -v open &> /dev/null; then
+                open "http://192.168.11.122:3000"
+            else
+                print_info "Grafana: http://192.168.11.122:3000"
+                print_info "Login with: admin / admin123"
+            fi
+            ;;
+        4)
+            print_info "Opening Prometheus..."
+            if command -v xdg-open &> /dev/null; then
+                xdg-open "http://192.168.11.122:9090"
+            elif command -v open &> /dev/null; then
+                open "http://192.168.11.122:9090"
+            else
+                print_info "Prometheus: http://192.168.11.122:9090"
+            fi
+            ;;
+        5)
+            print_info "Opening Custom Dashboard..."
+            if command -v xdg-open &> /dev/null; then
+                xdg-open "http://192.168.11.122:8082"
+            elif command -v open &> /dev/null; then
+                open "http://192.168.11.122:8082"
+            else
+                print_info "Custom Dashboard: http://192.168.11.122:8082"
+            fi
+            ;;
+        6)
+            print_section "All GUI URLs"
+            echo "🎛️  ProxySQL Web UI:    http://192.168.11.122:8080"
+            echo "🗄️  phpMyAdmin:         http://192.168.11.122:8081 (appuser/AppPass123!)"
+            echo "📊 Grafana:            http://192.168.11.122:3000 (admin/admin123)"
+            echo "📈 Prometheus:         http://192.168.11.122:9090"
+            echo "🌐 Custom Dashboard:   http://192.168.11.122:8082"
+            ;;
+        7)
+            print_section "GUI Services Status"
+            
+            # Check ProxySQL Web
+            if docker compose ps | grep -q "proxysql-web.*Up"; then
+                print_success "ProxySQL Web UI is running"
+            else
+                print_error "ProxySQL Web UI is not running"
+            fi
+            
+            # Check phpMyAdmin
+            if docker compose ps | grep -q "phpmyadmin.*Up"; then
+                print_success "phpMyAdmin is running"
+            else
+                print_error "phpMyAdmin is not running"
+            fi
+            
+            # Check Grafana
+            if docker compose ps | grep -q "grafana.*Up"; then
+                print_success "Grafana is running"
+            else
+                print_error "Grafana is not running"
+            fi
+            
+            # Check Prometheus
+            if docker compose ps | grep -q "prometheus.*Up"; then
+                print_success "Prometheus is running"
+            else
+                print_error "Prometheus is not running"
+            fi
+            
+            # Check Custom Dashboard
+            if docker compose ps | grep -q "web-dashboard.*Up"; then
+                print_success "Custom Dashboard is running"
+            else
+                print_error "Custom Dashboard is not running"
+            fi
+            ;;
+        0)
+            return
+            ;;
+        *)
+            print_error "Invalid choice"
+            ;;
+    esac
+    
+    echo ""
+    read -p "Press Enter to continue..."
+}
+
+# 10. Documentation
 show_documentation() {
     print_header "Documentation"
     
@@ -889,8 +1017,9 @@ main() {
                     6) performance_monitoring ;;
                     7) cluster_operations ;;
                     8) load_testing ;;
-                    9) show_documentation ;;
-                    10) troubleshooting ;;
+                    9) gui_management ;;
+                    10) show_documentation ;;
+                    11) troubleshooting ;;
                     0)
                         print_info "Thank you for using MySQL Cluster CLI!"
                         exit 0

@@ -659,10 +659,19 @@ main() {
     echo "  Deployment: $DEPLOY_LOG"
     echo "  Load Test: $TEST_LOG"
     echo
-    echo "Quick commands:"
-    echo "  Check cluster: ./health_check.sh"
-    echo "  View logs: docker compose logs -f"
-    echo "  Stop cluster: docker compose down"
+    echo -e "${CYAN}🖥️  GUI Management Interfaces:${NC}"
+    echo "  🎛️  ProxySQL Web UI:    http://192.168.11.122:8080"
+    echo "  🗄️  phpMyAdmin:         http://192.168.11.122:8081"
+    echo "  📊 Grafana:            http://192.168.11.122:3000 (admin/admin123)"
+    echo "  📈 Prometheus:         http://192.168.11.122:9090"
+    echo "  🌐 Custom Dashboard:   http://192.168.11.122:8082"
+    echo
+    echo -e "${CYAN}💻 Command Line Tools:${NC}"
+    echo "  Interactive CLI: ./cluster-cli.sh"
+    echo "  Quick Status: ./cluster-cli.sh status"
+    echo "  Health Check: ./health_check.sh"
+    echo "  View Logs: docker compose logs -f"
+    echo "  Stop Cluster: docker compose down"
 }
 
 # Run main function
