@@ -9,7 +9,7 @@ DB_DATABASE=appdb
 DB_USERNAME=appuser
 DB_PASSWORD=AppPass123!
 
-# Alternative untuk Database MPP
+# Alternative untuk Database 
 DB_MPP_HOST=192.168.11.122
 DB_MPP_PORT=6033
 DB_MPP_DATABASE=db-mpp

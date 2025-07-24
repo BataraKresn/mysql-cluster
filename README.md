@@ -2,12 +2,24 @@
 
 Implementasi MySQL Cluster dengan High Availability menggunakan Master-Slave Replication dan ProxySQL Load Balancer untuk aplikasi production dengan kapasitas 1500-2000 concurrent users.
 
-## 🏗️ **Arsitektur Sistem**
+## � **Quick Start Dashboard**
+
+```bash
+# Start complete cluster dengan dashboard
+./start-dashboard.sh
+
+# Access points:
+# 📊 Dashboard:     http://localhost:5000
+# 🔗 ProxySQL UI:   http://localhost:6080  
+# 🗄️ MySQL Proxy:   localhost:6033
+```
+
+## �🏗️ **Arsitektur Sistem**
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Application   │    │  External Apps  │    │     Laravel     │
-│   (Any Client)  │    │   (Navicat)     │    │   Framework     │
+│   Application   │    │  Web Dashboard  │    │     Laravel     │
+│   (Any Client)  │    │  (Port 5000)    │    │   Framework     │
 └─────────┬───────┘    └─────────┬───────┘    └─────────┬───────┘
           │                      │                      │
           └──────────────────────┼──────────────────────┘
@@ -16,7 +28,8 @@ Implementasi MySQL Cluster dengan High Availability menggunakan Master-Slave Rep
                     │      ProxySQL             │
                     │   (192.168.11.122:6033)  │
                     │   Load Balancer           │
-                    │   Query Routing           │
+                    │   Query Routing           │ ◄── Admin (6032)
+                    │   Web UI (6080)           │ ◄── HTTP UI
                     └─────────────┬─────────────┘
                                  │
                     ┌─────────────▼─────────────┐
@@ -33,6 +46,28 @@ Implementasi MySQL Cluster dengan High Availability menggunakan Master-Slave Rep
 │ Port: 3306    │      │ Port: 3306      │      │ Port: 6033      │
 └───────────────┘      └─────────────────┘      └─────────────────┘
 ```
+
+## 📊 **Web Dashboard Features**
+
+### 🎯 **Real-time Monitoring**
+- ✅ **Cluster Health Score**: Comprehensive health monitoring algorithm
+- ✅ **Service Status**: Live status ProxySQL, MySQL Primary, MySQL Replica
+- ✅ **Replication Monitoring**: IO/SQL thread status, replication lag
+- ✅ **Performance Metrics**: Connections, QPS, uptime tracking
+
+### 🔧 **Management Tools**
+- ✅ **Quick Actions**: Restart services, backup, health check
+- ✅ **Log Monitoring**: Real-time log viewing untuk troubleshooting
+- ✅ **ProxySQL Integration**: Backend servers, query rules, connection pool
+- ✅ **Auto-refresh**: 30-second intervals dengan manual override
+
+### 🚀 **Access Points**
+| Port | Service | Purpose | URL |
+|------|---------|---------|-----|
+| 5000 | Dashboard | Web monitoring & management | http://localhost:5000 |
+| 6032 | ProxySQL Admin | SQL administration | mysql -h localhost -P 6032 -u admin -p |
+| 6033 | ProxySQL Proxy | Application connections | mysql -h localhost -P 6033 -u user -p |
+| 6080 | ProxySQL Web | Native ProxySQL UI | http://localhost:6080 |
 
 ## ✨ **Fitur Utama**
 

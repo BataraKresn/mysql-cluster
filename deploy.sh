@@ -661,9 +661,6 @@ main() {
     echo
     echo -e "${CYAN}🖥️  GUI Management Interfaces:${NC}"
     echo "  🎛️  ProxySQL Web UI:    http://192.168.11.122:8080"
-    echo "  🗄️  phpMyAdmin:         http://192.168.11.122:8081"
-    echo "  📊 Grafana:            http://192.168.11.122:3000 (admin/admin123)"
-    echo "  📈 Prometheus:         http://192.168.11.122:9090"
     echo "  🌐 Custom Dashboard:   http://192.168.11.122:8082"
     echo
     echo -e "${CYAN}💻 Command Line Tools:${NC}"

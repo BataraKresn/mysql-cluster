@@ -1,3 +1,5 @@
 replicat-data/
 primary-data/
 logs/
+backups/
+.env

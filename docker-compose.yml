@@ -57,106 +57,46 @@ services:
       - mysql-primary
       - mysql-replica
 
-  # ProxySQL Web Interface
+  # ProxySQL Web Interface - using nginx with custom web interface
   proxysql-web:
-    image: proximacentauri/proxysql-web:latest
+    image: nginx:alpine
     container_name: proxysql-web
     ports:
-      - "8080:8080"
-    environment:
-      - PROXYSQL_HOST=proxysql
-      - PROXYSQL_PORT=6032
-      - PROXYSQL_USERNAME=superman
-      - PROXYSQL_PASSWORD=Soleh1!
+      - "8080:80"
+    volumes:
+      - ./proxysql-web:/usr/share/nginx/html
+      - ./proxysql-web/nginx.conf:/etc/nginx/nginx.conf
     networks:
       mysqlnet:
         ipv4_address: 172.20.0.15
     depends_on:
       - proxysql
 
-  # phpMyAdmin for database management
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin:latest
-    container_name: phpmyadmin
+  # Custom Web Dashboard with Flask Backend
+  mysql-dashboard:
+    build: 
+      context: ./web-ui
+      dockerfile: Dockerfile
+    container_name: mysql-dashboard
     ports:
-      - "8081:80"
+      - "5000:5000"  # Flask API and Web Interface
     environment:
-      PMA_HOST: proxysql
-      PMA_PORT: 6033
-      PMA_USER: appuser
-      PMA_PASSWORD: AppPass123!
-      UPLOAD_LIMIT: 1024M
+      - FLASK_ENV=production
+      - PROXYSQL_HOST=proxysql
+      - MYSQL_PRIMARY_HOST=mysql-primary
+      - MYSQL_REPLICA_HOST=mysql-replica
     volumes:
-      - ./phpmyadmin-config.inc.php:/etc/phpmyadmin/config.inc.php
-    networks:
-      mysqlnet:
-        ipv4_address: 172.20.0.16
-    depends_on:
-      - proxysql
-
-  # Grafana for monitoring dashboards
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    ports:
-      - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin123
-      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
-    volumes:
-      - ./grafana/grafana-data:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning
-      - ./grafana/dashboards:/var/lib/grafana/dashboards
-    networks:
-      mysqlnet:
-        ipv4_address: 172.20.0.17
-    depends_on:
-      - proxysql
-
-  # Prometheus for metrics collection
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./prometheus/prometheus-data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--web.enable-lifecycle'
-    networks:
-      mysqlnet:
-        ipv4_address: 172.20.0.18
-
-  # MySQL Exporter for Prometheus
-  mysql-exporter:
-    image: prom/mysqld-exporter:latest
-    container_name: mysql-exporter
-    ports:
-      - "9104:9104"
-    environment:
-      - DATA_SOURCE_NAME=appuser:AppPass123!@(proxysql:6033)/
-    networks:
-      mysqlnet:
-        ipv4_address: 172.20.0.19
-    depends_on:
-      - proxysql
-
-  # Custom Web Dashboard
-  web-dashboard:
-    image: nginx:alpine
-    container_name: web-dashboard
-    ports:
-      - "8082:80"
-    volumes:
-      - ./web-ui:/usr/share/nginx/html
+      - ./web-ui/logs:/app/logs
+      - ./web-ui/backups:/app/backups
+      - /var/run/docker.sock:/var/run/docker.sock  # For docker commands
     networks:
       mysqlnet:
         ipv4_address: 172.20.0.20
+    depends_on:
+      - proxysql
+      - mysql-primary
+      - mysql-replica
+    restart: unless-stopped
 
 networks:
   mysqlnet:
@@ -166,7 +106,3 @@ networks:
       config:
         - subnet: 172.20.0.0/16
           gateway: 172.20.0.1
-
-volumes:
-  grafana-data:
-  prometheus-data:

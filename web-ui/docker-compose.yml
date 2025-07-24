@@ -1,0 +1,27 @@
+services:
+  # MySQL Cluster Dashboard
+  mysql-dashboard:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: mysql-dashboard
+    ports:
+      - "5000:5000"  # Flask API
+    environment:
+      - FLASK_ENV=production
+      - PROXYSQL_HOST=proxysql
+      - MYSQL_PRIMARY_HOST=mysql-primary
+      - MYSQL_REPLICA_HOST=mysql-replica
+    volumes:
+      - ./logs:/app/logs
+      - ./backups:/app/backups
+      - /var/run/docker.sock:/var/run/docker.sock  # For docker commands
+    networks:
+      mysqlnet:
+        ipv4_address: 172.20.0.20
+    restart: unless-stopped
+
+networks:
+  mysqlnet:
+    name: mysqlnet
+    external: true

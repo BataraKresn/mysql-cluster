@@ -564,15 +564,13 @@ gui_management() {
     
     echo "Available GUI tools:"
     echo "1. 🎛️  Open ProxySQL Web UI"
-    echo "2. 🗄️  Open phpMyAdmin"
-    echo "3. 📊 Open Grafana Dashboard"
-    echo "4. 📈 Open Prometheus"
-    echo "5. 🌐 Open Custom Dashboard"
-    echo "6. 📋 Show All GUI URLs"
-    echo "7. 🔍 Check GUI Services Status"
+    echo "2. 🌐 Open Custom Dashboard"
+    echo "3. � Open ProxySQL Admin (MySQL CLI)"
+    echo "4. 📋 Show All GUI URLs"
+    echo "5. 🔍 Check GUI Services Status"
     echo "0. ← Back to Main Menu"
     
-    read -p "Enter your choice [0-7]: " gui_choice
+    read -p "Enter your choice [0-5]: " gui_choice
     
     case $gui_choice in
         1)
@@ -586,38 +584,6 @@ gui_management() {
             fi
             ;;
         2)
-            print_info "Opening phpMyAdmin..."
-            if command -v xdg-open &> /dev/null; then
-                xdg-open "http://192.168.11.122:8081"
-            elif command -v open &> /dev/null; then
-                open "http://192.168.11.122:8081"
-            else
-                print_info "phpMyAdmin: http://192.168.11.122:8081"
-                print_info "Login with: appuser / AppPass123!"
-            fi
-            ;;
-        3)
-            print_info "Opening Grafana Dashboard..."
-            if command -v xdg-open &> /dev/null; then
-                xdg-open "http://192.168.11.122:3000"
-            elif command -v open &> /dev/null; then
-                open "http://192.168.11.122:3000"
-            else
-                print_info "Grafana: http://192.168.11.122:3000"
-                print_info "Login with: admin / admin123"
-            fi
-            ;;
-        4)
-            print_info "Opening Prometheus..."
-            if command -v xdg-open &> /dev/null; then
-                xdg-open "http://192.168.11.122:9090"
-            elif command -v open &> /dev/null; then
-                open "http://192.168.11.122:9090"
-            else
-                print_info "Prometheus: http://192.168.11.122:9090"
-            fi
-            ;;
-        5)
             print_info "Opening Custom Dashboard..."
             if command -v xdg-open &> /dev/null; then
                 xdg-open "http://192.168.11.122:8082"
@@ -627,15 +593,19 @@ gui_management() {
                 print_info "Custom Dashboard: http://192.168.11.122:8082"
             fi
             ;;
-        6)
+        3)
+            print_info "Opening ProxySQL Admin interface..."
+            print_info "Use this command to connect to ProxySQL Admin:"
+            echo "mysql -h192.168.11.122 -P6032 -usuperman -pSoleh1!"
+            ;;
+        4)
             print_section "All GUI URLs"
             echo "🎛️  ProxySQL Web UI:    http://192.168.11.122:8080"
-            echo "🗄️  phpMyAdmin:         http://192.168.11.122:8081 (appuser/AppPass123!)"
-            echo "📊 Grafana:            http://192.168.11.122:3000 (admin/admin123)"
-            echo "📈 Prometheus:         http://192.168.11.122:9090"
             echo "🌐 Custom Dashboard:   http://192.168.11.122:8082"
+            echo "� ProxySQL Admin:     mysql -h192.168.11.122 -P6032 -usuperman -pSoleh1!"
+            echo "� Application Port:   mysql -h192.168.11.122 -P6033 -uappuser -pAppPass123!"
             ;;
-        7)
+        5)
             print_section "GUI Services Status"
             
             # Check ProxySQL Web
@@ -645,32 +615,18 @@ gui_management() {
                 print_error "ProxySQL Web UI is not running"
             fi
             
-            # Check phpMyAdmin
-            if docker compose ps | grep -q "phpmyadmin.*Up"; then
-                print_success "phpMyAdmin is running"
-            else
-                print_error "phpMyAdmin is not running"
-            fi
-            
-            # Check Grafana
-            if docker compose ps | grep -q "grafana.*Up"; then
-                print_success "Grafana is running"
-            else
-                print_error "Grafana is not running"
-            fi
-            
-            # Check Prometheus
-            if docker compose ps | grep -q "prometheus.*Up"; then
-                print_success "Prometheus is running"
-            else
-                print_error "Prometheus is not running"
-            fi
-            
             # Check Custom Dashboard
             if docker compose ps | grep -q "web-dashboard.*Up"; then
                 print_success "Custom Dashboard is running"
             else
                 print_error "Custom Dashboard is not running"
+            fi
+            
+            # Check ProxySQL
+            if docker compose ps | grep -q "proxysql.*Up"; then
+                print_success "ProxySQL is running"
+            else
+                print_error "ProxySQL is not running"
             fi
             ;;
         0)

@@ -1,0 +1,1526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySQL Cluster Dashboard with ProxySQL</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --dark-color: #1f2937;
+            --light-color: #f8fafc;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.2);
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --gradient-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--gradient-primary);
+            min-height: 100vh;
+            padding: 16px;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        .dashboard {
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-lg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .header h1 {
+            color: var(--text-primary);
+            text-align: center;
+            margin-bottom: 16px;
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .cluster-health {
+            text-align: center;
+            margin-bottom: 24px;
+            padding: 24px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .health-score {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin: 16px 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .health-healthy { 
+            color: var(--success-color);
+            animation: pulse-success 2s infinite;
+        }
+        .health-warning { 
+            color: var(--warning-color);
+            animation: pulse-warning 2s infinite;
+        }
+        .health-critical { 
+            color: var(--danger-color);
+            animation: pulse-danger 2s infinite;
+        }
+        
+        @keyframes pulse-success {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        @keyframes pulse-warning {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        @keyframes pulse-danger {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        .status-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+        
+        .status-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .status-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-success);
+            transition: all 0.3s ease;
+        }
+        
+        .status-card.offline::before {
+            background: var(--gradient-danger);
+        }
+        
+        .status-card.warning::before {
+            background: var(--gradient-warning);
+        }
+        
+        .status-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .status-card h3 {
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--success-color);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+            animation: pulse-indicator 2s infinite;
+        }
+        
+        .status-indicator.offline {
+            background: var(--danger-color);
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+        }
+        
+        .status-indicator.warning {
+            background: var(--warning-color);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+        }
+        
+        @keyframes pulse-indicator {
+            0%, 100% {
+                box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+            }
+            50% {
+                box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.1);
+            }
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 12px 0;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+        
+        .metric:last-child {
+            border-bottom: none;
+        }
+        
+        .metric:hover {
+            background: rgba(59, 130, 246, 0.05);
+            margin: 12px -12px;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        
+        .metric-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        
+        .metric-value {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .architecture-section, .quick-actions {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: var(--shadow-md);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .architecture-section h3, .quick-actions h3 {
+            margin-bottom: 24px;
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .architecture-diagram {
+            text-align: center;
+            padding: 24px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .arch-component {
+            display: inline-block;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 12px;
+            min-width: 140px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .arch-component:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .arch-component.primary {
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+            border-color: var(--success-color);
+            color: #166534;
+        }
+        
+        .arch-component.replica {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border-color: var(--primary-color);
+            color: #1e3a8a;
+        }
+        
+        .arch-component.proxy {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-color: var(--warning-color);
+            color: #92400e;
+        }
+        
+        .arch-arrow {
+            font-size: 2rem;
+            margin: 0 16px;
+            color: var(--text-secondary);
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-4px);
+            }
+            60% {
+                transform: translateY(-2px);
+            }
+        }
+        
+        .quick-actions h3 {
+            margin-bottom: 24px;
+            color: var(--text-primary);
+        }
+        
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+        }
+        
+        .action-btn {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 14px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .action-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .action-btn:hover::before {
+            left: 100%;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .action-btn:active {
+            transform: translateY(0);
+        }
+        
+        .action-btn.danger {
+            background: var(--gradient-danger);
+        }
+        
+        .action-btn.warning {
+            background: var(--gradient-warning);
+        }
+        
+        .action-btn.success {
+            background: var(--gradient-success);
+        }
+        
+        .metrics-section, .management-tools, .logs-section {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 24px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .metrics-section h3, .management-tools h3, .logs-section h3 {
+            margin-bottom: 24px;
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px;
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .metric-card h4 {
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        .replication-status {
+            margin-top: 16px;
+            padding: 16px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+            border-radius: 8px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        
+        .replication-lag {
+            font-weight: 600;
+            color: var(--text-primary);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        
+        .replication-lag.good {
+            color: var(--success-color);
+            background: rgba(16, 185, 129, 0.1);
+        }
+        
+        .replication-lag.warning {
+            color: var(--warning-color);
+            background: rgba(245, 158, 11, 0.1);
+        }
+        
+        .replication-lag.critical {
+            color: var(--danger-color);
+            background: rgba(239, 68, 68, 0.1);
+        }
+        
+        
+        /* Traffic Card Styling */
+        .traffic-card {
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(0, 242, 195, 0.05) 100%);
+            border: 1px solid rgba(79, 172, 254, 0.3);
+        }
+        
+        .traffic-card h3 {
+            position: relative;
+        }
+        
+        .traffic-refresh-indicator {
+            position: absolute;
+            right: 0;
+            top: 0;
+            font-size: 0.8rem;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+        
+        /* Container Card Styling */
+        .container-card {
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.1) 0%, rgba(79, 70, 229, 0.05) 100%);
+            border: 1px solid rgba(147, 51, 234, 0.3);
+        }
+        
+        .container-card .metric-value.error {
+            color: var(--danger-color);
+            font-weight: 600;
+        }
+        
+        /* Enhanced metrics display */
+        .metric small {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        
+        /* Pulse animations for indicators */
+        @keyframes pulse-success {
+            0%, 100% { 
+                opacity: 1; 
+                transform: scale(1);
+            }
+            50% { 
+                opacity: 0.7;
+                transform: scale(1.1);
+            }
+        }
+        
+        /* Status overview enhanced grid */
+        .status-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+            align-items: start;
+        }
+        
+        /* Responsive adjustments for new cards */
+        @media (max-width: 768px) {
+            .status-overview {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            
+            .traffic-card,
+            .container-card {
+                min-height: auto;
+            }
+            
+            .traffic-refresh-indicator {
+                position: static;
+                display: inline-block;
+                margin-left: 8px;
+            }
+        }
+        
+        .tool-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .tool-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        
+        .tool-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .tool-card h4 {
+            margin-bottom: 12px;
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        .tool-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        
+        .log-container {
+            background: #1a1a1a;
+            color: #e5e5e5;
+            padding: 20px;
+            border-radius: 12px;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 16px;
+            border: 1px solid #333;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .log-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .log-container::-webkit-scrollbar-track {
+            background: #2a2a2a;
+            border-radius: 4px;
+        }
+        
+        .log-container::-webkit-scrollbar-thumb {
+            background: #4a4a4a;
+            border-radius: 4px;
+        }
+        
+        .log-container::-webkit-scrollbar-thumb:hover {
+            background: #5a5a5a;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+        
+        .loading::before {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            color: var(--danger-color);
+            background: rgba(239, 68, 68, 0.1);
+            padding: 16px;
+            border-radius: 8px;
+            margin: 16px 0;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            font-weight: 500;
+        }
+        
+        .success {
+            color: var(--success-color);
+            background: rgba(16, 185, 129, 0.1);
+            padding: 16px;
+            border-radius: 8px;
+            margin: 16px 0;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            font-weight: 500;
+        }
+        
+        .refresh-btn {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            box-shadow: var(--shadow-lg);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .refresh-btn:hover {
+            transform: scale(1.1) rotate(180deg);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .refresh-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .auto-refresh {
+            text-align: center;
+            margin-bottom: 24px;
+            background: var(--card-bg);
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-weight: 500;
+        }
+        
+        .auto-refresh button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+        
+        .auto-refresh button:hover {
+            background: var(--secondary-color);
+            transform: translateY(-1px);
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            }
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+            
+            .header {
+                padding: 24px 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .status-overview {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            
+            .action-grid {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .tool-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .refresh-btn {
+                bottom: 20px;
+                right: 20px;
+                width: 50px;
+                height: 50px;
+                font-size: 18px;
+            }
+            
+            .architecture-section, .quick-actions, .metrics-section, .management-tools, .logs-section {
+                padding: 20px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.75rem;
+            }
+            
+            .health-score {
+                font-size: 2.5rem;
+            }
+            
+            .status-card, .metric-card, .tool-card {
+                padding: 16px;
+            }
+            
+            .auto-refresh {
+                flex-direction: column;
+                gap: 8px;
+                text-align: center;
+            }
+        }
+        
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --card-bg: rgba(31, 41, 55, 0.95);
+                --text-primary: #f9fafb;
+                --text-secondary: #d1d5db;
+                --border-color: #374151;
+            }
+        }
+        
+        /* High contrast mode */
+        @media (prefers-contrast: high) {
+            .status-card, .metric-card, .tool-card {
+                border-width: 2px;
+            }
+        }
+        
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>🐬 MySQL Cluster Dashboard</h1>
+            <div class="cluster-health">
+                <div style="font-size: 1.1rem; font-weight: 500; color: var(--text-secondary);">Cluster Health Score</div>
+                <div id="health-score" class="health-score">Loading...</div>
+                <div id="last-update" style="font-size: 0.9rem; color: var(--text-secondary);">Last updated: Never</div>
+            </div>
+        </div>
+
+        <div class="auto-refresh">
+            <span>🔄 Auto-refresh: <span id="auto-refresh-status">Enabled (30s)</span></span>
+            <button onclick="toggleAutoRefresh()" id="refresh-toggle">Disable</button>
+        </div>
+
+        <div class="status-overview" id="status-overview">
+            <!-- Status cards will be populated by JavaScript -->
+        </div>
+
+        <div class="main-content">
+            <div class="architecture-section">
+                <h3>🏗️ Cluster Architecture Overview</h3>
+                <div class="architecture-diagram">
+                    <div>
+                        <div class="arch-component">📱 Applications</div>
+                        <div class="arch-arrow">⬇️</div>
+                    </div>
+                    <div>
+                        <div class="arch-component proxy">🔀 ProxySQL<br><small>Load Balancer</small></div>
+                    </div>
+                    <div>
+                        <div class="arch-arrow">⬇️</div>
+                        <span style="margin: 0 20px;">⬇️</span>
+                    </div>
+                    <div>
+                        <div class="arch-component primary">🗄️ MySQL Primary<br><small>Read/Write</small></div>
+                        <div class="arch-component replica">🗄️ MySQL Replica<br><small>Read Only</small></div>
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <small>
+                            ➡️ Write queries go to Primary<br>
+                            ➡️ Read queries are load balanced<br>
+                            ➡️ Automatic failover via ProxySQL
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="quick-actions">
+                <h3>⚡ Quick Actions</h3>
+                <div class="action-grid">
+                    <button class="action-btn success" onclick="performAction('health-check')">
+                        🏥 Health Check
+                    </button>
+                    <button class="action-btn warning" onclick="performAction('restart-proxysql')">
+                        🔄 Restart ProxySQL
+                    </button>
+                    <button class="action-btn warning" onclick="performAction('restart-primary')">
+                        🔄 Restart Primary
+                    </button>
+                    <button class="action-btn warning" onclick="performAction('restart-replica')">
+                        🔄 Restart Replica
+                    </button>
+                    <button class="action-btn success" onclick="performAction('backup')">
+                        💾 Create Backup
+                    </button>
+                    <button class="action-btn" onclick="showLogs('proxysql')">
+                        📋 ProxySQL Logs
+                    </button>
+                    <button class="action-btn" onclick="showLogs('mysql-primary')">
+                        📋 Primary Logs
+                    </button>
+                    <button class="action-btn" onclick="showLogs('mysql-replica')">
+                        📋 Replica Logs
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="management-tools">
+            <h3>🛠️ Management Tools</h3>
+            <div class="tool-grid">
+                <div class="tool-card">
+                    <h4>ProxySQL Web UI</h4>
+                    <p>Native ProxySQL web interface for advanced configuration</p>
+                    <a href="http://localhost:6080" target="_blank" class="action-btn">
+                        🌐 Open (Port 6080)
+                    </a>
+                </div>
+                <div class="tool-card">
+                    <h4>ProxySQL Admin SQL</h4>
+                    <p>SQL Admin interface (use MySQL client)</p>
+                    <button class="action-btn" onclick="showAdminInfo()">
+                        🗃️ Connection Info
+                    </button>
+                </div>
+                <div class="tool-card">
+                    <h4>Cluster Dashboard</h4>
+                    <p>This monitoring interface</p>
+                    <a href="http://localhost:8082" target="_blank" class="action-btn">
+                        📊 Dashboard (Port 8082)
+                    </a>
+                </div>
+                <div class="tool-card">
+                    <h4>MySQL Client Access</h4>
+                    <p>Connect to cluster via ProxySQL</p>
+                    <button class="action-btn" onclick="showClientInfo()">
+                        🔌 Connection Info
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="metrics-section">
+            <h3>📊 Detailed Metrics</h3>
+            <div class="metrics-grid" id="detailed-metrics">
+                <!-- Detailed metrics will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <div class="logs-section">
+            <h3>📋 Service Logs</h3>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
+                <button onclick="showLogs('proxysql')" class="action-btn">📊 ProxySQL</button>
+                <button onclick="showLogs('mysql-primary')" class="action-btn">🗄️ Primary</button>
+                <button onclick="showLogs('mysql-replica')" class="action-btn">📚 Replica</button>
+            </div>
+            <div id="log-display" class="log-container" style="display: none;">
+                Select a service to view logs
+            </div>
+        </div>
+    </div>
+
+    <button class="refresh-btn" onclick="refreshMetrics()" title="Refresh Now">
+        🔄
+    </button>
+
+    <script>
+        let autoRefreshEnabled = true;
+        let autoRefreshInterval;
+        let currentMetrics = {};
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshMetrics();
+            startAutoRefresh();
+        });
+
+        function startAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            
+            if (autoRefreshEnabled) {
+                autoRefreshInterval = setInterval(refreshMetrics, 30000); // 30 seconds
+                document.getElementById('auto-refresh-status').textContent = 'Enabled (30s)';
+                document.getElementById('refresh-toggle').textContent = 'Disable';
+            } else {
+                document.getElementById('auto-refresh-status').textContent = 'Disabled';
+                document.getElementById('refresh-toggle').textContent = 'Enable';
+            }
+        }
+
+        function toggleAutoRefresh() {
+            autoRefreshEnabled = !autoRefreshEnabled;
+            startAutoRefresh();
+        }
+
+        async function refreshMetrics() {
+            try {
+                const response = await fetch('/api/metrics');
+                const metrics = await response.json();
+                
+                if (metrics.error) {
+                    showError('Failed to fetch metrics: ' + metrics.error);
+                    return;
+                }
+                
+                currentMetrics = metrics;
+                updateDashboard(metrics);
+                document.getElementById('last-update').textContent = 
+                    'Last updated: ' + new Date().toLocaleTimeString();
+                    
+            } catch (error) {
+                showError('Failed to fetch metrics: ' + error.message);
+            }
+        }
+
+        function updateDashboard(metrics) {
+            updateHealthScore(metrics.cluster_health);
+            updateStatusOverview(metrics);
+            updateDetailedMetrics(metrics);
+        }
+
+        function updateHealthScore(health) {
+            const scoreElement = document.getElementById('health-score');
+            scoreElement.textContent = health.score + '%';
+            scoreElement.className = 'health-score health-' + health.status;
+        }
+
+        function updateStatusOverview(metrics) {
+            const container = document.getElementById('status-overview');
+            container.innerHTML = '';
+
+            // ProxySQL Card
+            const proxysqlCard = createStatusCard('ProxySQL', metrics.proxysql, {
+                'Status': metrics.proxysql.status,
+                'Backends': metrics.proxysql.backends ? metrics.proxysql.backends.length : 0,
+                'Query Rules': metrics.proxysql.query_rules ? metrics.proxysql.query_rules.length : 0
+            });
+            container.appendChild(proxysqlCard);
+
+            // MySQL Primary Card
+            const primaryCard = createStatusCard('MySQL Primary', metrics.mysql_primary, {
+                'Status': metrics.mysql_primary.status,
+                'Uptime': formatUptime(metrics.mysql_primary.uptime),
+                'Connections': metrics.mysql_primary.connections,
+                'Queries': metrics.mysql_primary.queries
+            });
+            container.appendChild(primaryCard);
+
+            // MySQL Replica Card
+            const replicaCard = createStatusCard('MySQL Replica', metrics.mysql_replica, {
+                'Status': metrics.mysql_replica.status,
+                'Uptime': formatUptime(metrics.mysql_replica.uptime),
+                'Connections': metrics.mysql_replica.connections,
+                'Replication Lag': metrics.replication_lag !== null ? metrics.replication_lag + 's' : 'Unknown'
+            });
+            container.appendChild(replicaCard);
+
+            // Cluster Health Card
+            const healthCard = createStatusCard('Cluster Health', metrics.cluster_health, {
+                'Health Score': metrics.cluster_health.score + '%',
+                'Status': metrics.cluster_health.status,
+                'Timestamp': new Date(metrics.timestamp).toLocaleString()
+            });
+            container.appendChild(healthCard);
+        }
+
+        function createStatusCard(title, data, metrics) {
+            const card = document.createElement('div');
+            card.className = 'status-card';
+            
+            if (data.status === 'offline' || data.status === 'error') {
+                card.classList.add('offline');
+            } else if (data.status === 'warning') {
+                card.classList.add('warning');
+            }
+
+            const indicatorClass = data.status === 'online' || data.status === 'healthy' ? '' : 
+                                 data.status === 'offline' || data.status === 'critical' || data.status === 'error' ? 'offline' : 'warning';
+
+            card.innerHTML = `
+                <h3>
+                    <span class="status-indicator ${indicatorClass}"></span>
+                    ${title}
+                </h3>
+                ${Object.entries(metrics).map(([key, value]) => `
+                    <div class="metric">
+                        <span class="metric-label">${key}:</span>
+                        <span class="metric-value">${value}</span>
+                    </div>
+                `).join('')}
+                ${data.error ? `<div class="error">Error: ${data.error}</div>` : ''}
+            `;
+
+            return card;
+        }
+
+        function updateDetailedMetrics(metrics) {
+            const container = document.getElementById('detailed-metrics');
+            container.innerHTML = '';
+
+            // ProxySQL Backend Servers
+            if (metrics.proxysql.backends && metrics.proxysql.backends.length > 0) {
+                const backendCard = document.createElement('div');
+                backendCard.className = 'metric-card';
+                backendCard.innerHTML = `
+                    <h4>ProxySQL Backend Servers</h4>
+                    ${metrics.proxysql.backends.map(backend => `
+                        <div class="metric">
+                            <span class="metric-label">${backend.hostname}:${backend.port}</span>
+                            <span class="metric-value">Status: ${backend.status}</span>
+                        </div>
+                    `).join('')}
+                `;
+                container.appendChild(backendCard);
+            }
+
+            // Replication Status
+            if (metrics.mysql_replica.replication) {
+                const replCard = document.createElement('div');
+                replCard.className = 'metric-card';
+                const repl = metrics.mysql_replica.replication;
+                
+                replCard.innerHTML = `
+                    <h4>Replication Status</h4>
+                    <div class="replication-status">
+                        <div class="metric">
+                            <span class="metric-label">IO Thread:</span>
+                            <span class="metric-value">${repl.io_running}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">SQL Thread:</span>
+                            <span class="metric-value">${repl.sql_running}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Master Host:</span>
+                            <span class="metric-value">${repl.master_host}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Seconds Behind Master:</span>
+                            <span class="metric-value replication-lag ${getLagClass(repl.seconds_behind_master)}">
+                                ${repl.seconds_behind_master}
+                            </span>
+                        </div>
+                        ${repl.last_error ? `<div class="error">Last Error: ${repl.last_error}</div>` : ''}
+                    </div>
+                `;
+                container.appendChild(replCard);
+            }
+
+            // ProxySQL Connection Pool
+            if (metrics.proxysql.connection_pool && metrics.proxysql.connection_pool.length > 0) {
+                const poolCard = document.createElement('div');
+                poolCard.className = 'metric-card';
+                poolCard.innerHTML = `
+                    <h4>Connection Pool Status</h4>
+                    ${metrics.proxysql.connection_pool.map(pool => `
+                        <div class="metric">
+                            <span class="metric-label">${pool.srv_host}:${pool.srv_port}</span>
+                            <span class="metric-value">Connections: ${pool.ConnUsed}/${pool.ConnFree}</span>
+                        </div>
+                    `).join('')}
+                `;
+                container.appendChild(poolCard);
+            }
+        }
+
+        function getLagClass(lag) {
+            if (lag === 'Unknown' || lag === null) return '';
+            const lagNum = parseInt(lag);
+            if (lagNum <= 1) return 'good';
+            if (lagNum <= 5) return 'warning';
+            return 'critical';
+        }
+
+        function formatUptime(seconds) {
+            if (!seconds) return '0s';
+            
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            
+            if (days > 0) return `${days}d ${hours}h`;
+            if (hours > 0) return `${hours}h ${minutes}m`;
+            return `${minutes}m`;
+        }
+
+        async function performAction(action) {
+            const confirmActions = ['restart-proxysql', 'restart-primary', 'restart-replica'];
+            
+            if (confirmActions.includes(action)) {
+                if (!confirm(`Are you sure you want to ${action.replace('-', ' ')}?`)) {
+                    return;
+                }
+            }
+
+            try {
+                let url;
+                switch(action) {
+                    case 'health-check':
+                        await refreshMetrics();
+                        showSuccess('Health check completed');
+                        return;
+                    case 'restart-proxysql':
+                        url = '/api/actions/restart/proxysql';
+                        break;
+                    case 'restart-primary':
+                        url = '/api/actions/restart/mysql-primary';
+                        break;
+                    case 'restart-replica':
+                        url = '/api/actions/restart/mysql-replica';
+                        break;
+                    case 'backup':
+                        url = '/api/actions/backup';
+                        break;
+                    default:
+                        showError('Unknown action: ' + action);
+                        return;
+                }
+
+                const response = await fetch(url);
+                const result = await response.json();
+
+                if (result.success) {
+                    showSuccess(result.message);
+                    // Refresh metrics after successful action
+                    setTimeout(refreshMetrics, 2000);
+                } else {
+                    showError(result.message || result.error);
+                }
+
+            } catch (error) {
+                showError('Action failed: ' + error.message);
+            }
+        }
+
+        async function showLogs(service) {
+            try {
+                const response = await fetch(`/api/logs/${service}`);
+                const result = await response.json();
+
+                const logDisplay = document.getElementById('log-display');
+                logDisplay.style.display = 'block';
+
+                if (result.success) {
+                    logDisplay.innerHTML = `
+                        <strong>Logs for ${service}:</strong><br><br>
+                        ${result.logs.map(line => escapeHtml(line)).join('<br>')}
+                    `;
+                } else {
+                    logDisplay.innerHTML = `<span class="error">Failed to fetch logs: ${result.error}</span>`;
+                }
+
+                logDisplay.scrollTop = logDisplay.scrollHeight;
+
+            } catch (error) {
+                const logDisplay = document.getElementById('log-display');
+                logDisplay.style.display = 'block';
+                logDisplay.innerHTML = `<span class="error">Failed to fetch logs: ${error.message}</span>`;
+            }
+        }
+
+        function showAdminInfo() {
+            alert(`ProxySQL Admin SQL Connection:
+            
+Host: localhost (or your server IP)
+Port: 6032
+Username: admin
+Password: admin
+
+Connect via MySQL client:
+mysql -h localhost -P 6032 -u admin -p
+
+Note: Port 6032 is SQL Admin interface, not HTTP!
+Use this for ProxySQL administration commands.`);
+        }
+
+        function showClientInfo() {
+            alert(`MySQL Client Connection via ProxySQL:
+            
+Host: localhost (or your server IP)
+Port: 6033
+Username: your_mysql_user
+Password: your_mysql_password
+
+Connect via MySQL client:
+mysql -h localhost -P 6033 -u your_user -p
+
+ProxySQL will route:
+- SELECT queries to replica (read)
+- INSERT/UPDATE/DELETE to primary (write)`);
+        }
+
+        function showSuccess(message) {
+            const div = document.createElement('div');
+            div.className = 'success';
+            div.textContent = message;
+            document.querySelector('.header').appendChild(div);
+            setTimeout(() => div.remove(), 5000);
+        }
+
+        function showError(message) {
+            const div = document.createElement('div');
+            div.className = 'error';
+            div.textContent = message;
+            document.querySelector('.header').appendChild(div);
+            setTimeout(() => div.remove(), 5000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Traffic monitoring variables
+        let trafficData = {
+            lastQueries: 0,
+            lastDataIn: 0,
+            lastDataOut: 0,
+            lastTimestamp: Date.now()
+        };
+
+        // Load real-time traffic data
+        function loadTrafficMetrics() {
+            fetch('/api/traffic/realtime')
+                .then(response => response.json())
+                .then(data => {
+                    updateTrafficDisplay(data);
+                    updateTrafficRefreshIndicator();
+                })
+                .catch(error => {
+                    console.error('Error loading traffic metrics:', error);
+                });
+        }
+
+        // Update traffic display with calculations
+        function updateTrafficDisplay(data) {
+            const now = Date.now();
+            const timeDiff = (now - trafficData.lastTimestamp) / 1000; // seconds
+            
+            if (data.global_stats) {
+                const stats = {};
+                data.global_stats.forEach(stat => {
+                    stats[stat.variable_name] = parseInt(stat.variable_value);
+                });
+                
+                // Calculate queries per second
+                const currentQueries = stats.Questions || 0;
+                const queriesPerSec = trafficData.lastQueries > 0 ? 
+                    Math.round((currentQueries - trafficData.lastQueries) / timeDiff) : 0;
+                
+                // Calculate data transfer rates
+                const dataIn = stats.Queries_backends_bytes_recv || 0;
+                const dataOut = stats.Queries_backends_bytes_sent || 0;
+                const dataInRate = trafficData.lastDataIn > 0 ? 
+                    ((dataIn - trafficData.lastDataIn) / timeDiff / 1024 / 1024) : 0;
+                const dataOutRate = trafficData.lastDataOut > 0 ? 
+                    ((dataOut - trafficData.lastDataOut) / timeDiff / 1024 / 1024) : 0;
+                
+                // Update traffic metrics in status overview
+                updateTrafficCard(queriesPerSec, dataInRate, dataOutRate, data.connection_pool);
+                
+                // Store current values for next calculation
+                trafficData.lastQueries = currentQueries;
+                trafficData.lastDataIn = dataIn;
+                trafficData.lastDataOut = dataOut;
+            }
+            
+            trafficData.lastTimestamp = now;
+        }
+
+        // Create or update traffic card
+        function updateTrafficCard(queriesPerSec, dataInRate, dataOutRate, connectionPool) {
+            const container = document.getElementById('status-overview');
+            
+            // Remove existing traffic card if present
+            const existingCard = document.getElementById('traffic-card');
+            if (existingCard) {
+                existingCard.remove();
+            }
+            
+            // Calculate total connections
+            let totalConnections = 0;
+            if (connectionPool) {
+                totalConnections = connectionPool.reduce((sum, pool) => sum + (pool.ConnUsed || 0), 0);
+            }
+            
+            // Create new traffic card
+            const trafficCard = document.createElement('div');
+            trafficCard.id = 'traffic-card';
+            trafficCard.className = 'status-card traffic-card';
+            trafficCard.innerHTML = `
+                <h3>
+                    <span class="status-indicator"></span>
+                    📊 Real-time Traffic
+                    <div class="traffic-refresh-indicator" id="traffic-refresh">●</div>
+                </h3>
+                <div class="metric">
+                    <span class="metric-label">Queries/sec:</span>
+                    <span class="metric-value">${queriesPerSec.toLocaleString()}</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Data In:</span>
+                    <span class="metric-value">${dataInRate.toFixed(2)} MB/s</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Data Out:</span>
+                    <span class="metric-value">${dataOutRate.toFixed(2)} MB/s</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Connections:</span>
+                    <span class="metric-value">${totalConnections}</span>
+                </div>
+            `;
+            
+            // Insert as second card after cluster health
+            const firstCard = container.firstElementChild;
+            if (firstCard && firstCard.nextElementSibling) {
+                container.insertBefore(trafficCard, firstCard.nextElementSibling);
+            } else {
+                container.appendChild(trafficCard);
+            }
+        }
+
+        // Load container status
+        function loadContainerStatus() {
+            fetch('/api/container/status')
+                .then(response => response.json())
+                .then(data => {
+                    updateContainerDisplay(data);
+                })
+                .catch(error => {
+                    console.error('Error loading container status:', error);
+                });
+        }
+
+        // Update container status display
+        function updateContainerDisplay(data) {
+            const container = document.getElementById('status-overview');
+            
+            // Remove existing container card if present
+            const existingCard = document.getElementById('container-card');
+            if (existingCard) {
+                existingCard.remove();
+            }
+            
+            if (data.containers) {
+                const containers = data.containers;
+                const runningContainers = Object.values(containers).filter(c => c.status === 'running').length;
+                const totalContainers = Object.keys(containers).length;
+                
+                // Create container status card
+                const containerCard = document.createElement('div');
+                containerCard.id = 'container-card';
+                containerCard.className = 'status-card container-card';
+                
+                let statusClass = runningContainers === totalContainers ? '' : 
+                                 runningContainers > 0 ? 'warning' : 'offline';
+                
+                containerCard.innerHTML = `
+                    <h3>
+                        <span class="status-indicator ${statusClass}"></span>
+                        🐳 Container Status
+                        <small style="float: right;">${runningContainers}/${totalContainers} running</small>
+                    </h3>
+                    ${Object.entries(containers).map(([name, info]) => `
+                        <div class="metric">
+                            <span class="metric-label">${name}:</span>
+                            <span class="metric-value ${info.status === 'running' ? '' : 'error'}">${info.status}</span>
+                            ${info.cpu_percent !== undefined ? `
+                                <small style="display: block; color: var(--text-secondary);">
+                                    CPU: ${info.cpu_percent}% | Memory: ${info.memory_percent.toFixed(1)}%
+                                </small>
+                            ` : ''}
+                        </div>
+                    `).join('')}
+                `;
+                
+                container.appendChild(containerCard);
+            }
+        }
+
+        // Update refresh indicator for traffic
+        function updateTrafficRefreshIndicator() {
+            const indicator = document.getElementById('traffic-refresh');
+            if (indicator) {
+                indicator.style.color = '#4CAF50';
+                indicator.style.animation = 'pulse-success 1s ease-in-out';
+                setTimeout(() => {
+                    if (indicator) {
+                        indicator.style.color = '#666';
+                        indicator.style.animation = '';
+                    }
+                }, 1000);
+            }
+        }
+
+        // Enhanced refresh function that includes traffic and container data
+        function refreshMetricsEnhanced() {
+            refreshMetrics(); // Original metrics
+            loadTrafficMetrics(); // Traffic data
+            loadContainerStatus(); // Container status
+        }
+
+        // Override original refresh to include new data
+        const originalRefresh = refreshMetrics;
+        refreshMetrics = refreshMetricsEnhanced;
+
+        // Start traffic monitoring on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initial load
+            setTimeout(() => {
+                loadTrafficMetrics();
+                loadContainerStatus();
+            }, 1000);
+            
+            // Set up traffic monitoring interval (every 5 seconds)
+            setInterval(loadTrafficMetrics, 5000);
+            setInterval(loadContainerStatus, 10000);
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
+                e.preventDefault();
+                refreshMetrics();
+            }
+        });
+    </script>
+</body>
+</html>
